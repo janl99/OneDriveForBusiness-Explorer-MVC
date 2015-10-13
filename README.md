@@ -351,7 +351,7 @@ uploadButton.click(function (e) {
 
 ## Questions and Comments
 
-We'd love to get your feedback on the OneDriveForBusiness-Explorer project. You can send your questions and suggestions to us in the [Issues](https://github.com/robledosm/OneDriveForBusiness-Explorer/issues) section of this repository.
+We'd love to get your feedback on the [OneDriveForBusiness-Explorer-MVC](https://github.com/robledosm/OneDriveForBusiness-Explorer) project. You can send your questions and suggestions to us in the [Issues](https://github.com/robledosm/OneDriveForBusiness-Explorer/issues) section of this repository.
 
 
 ## Copyright ##
