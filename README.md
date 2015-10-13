@@ -92,7 +92,7 @@ private static async Task<SharePointClient> GetSharePointClient()
 ```
 
 ###Browsing folders and files
-Returns a list of *OneDriveItemViewModel*, if *folderId* is a null or an empty string, the list will be populated with objects from the root folder
+Returns a list of *OneDriveItemViewModel*, if *folderId* is a null or an empty string, the list will be populated with objects from the root folder.
 ```csharp
 List<OneDriveItemViewModel> oneDriveItems = new List<OneDriveItemViewModel>();
 SharePointClient client = await GetSharePointClient();
@@ -127,7 +127,7 @@ else
 ```
 
 ###Downloading files
-Download a file from OneDrive for Business as a Stream
+Download a file from OneDrive for Business as a Stream.
 
 ```csharp
 SharePointClient client = await GetSharePointClient();
@@ -152,7 +152,7 @@ using (Stream stream = await file.DownloadAsync())
 ```
 
 ###Uploading files
-Uploads a stream as a file to OneDrive for Business
+Uploads a stream as a file to OneDrive for Business deleting the file if it alrady exists.
 
 ```csharp
 SharePointClient client = await GetSharePointClient();
@@ -180,7 +180,7 @@ await client.Files.GetById(oneDriveFile.Id).ToFile().UploadAsync(Request.InputSt
 ##Quick Look at the the JavaScript Code
 
 ###Browse folders and files
-Gets the list of files and folders from the List method of the OneDriveExplorer Controller
+Gets the list of files and folders from the List method of the OneDriveExplorer Controller.
 ```javascript
 function loadFolder(folderId) {
   var dfd = $.Deferred();
@@ -239,7 +239,7 @@ function loadFolder(folderId) {
 }
 ```
 ###Downloading files
-Asks the user for confirmation before downloading the file from OneDrive for Business
+Asks the user for confirmation before downloading the file from OneDrive for Business.
 ```javascript
 function downloadFile() {
   var selectedItem = getSelectedItem();
@@ -272,7 +272,7 @@ function downloadFile() {
 ```
 
 ###Uploading files
-Asks the user for confirmation before uploading a file to OneDrive for Business using XMLHttpRequest()
+Asks the user for confirmation before uploading a file to OneDrive for Business using XMLHttpRequest().
 ```javascript
 uploadButton.click(function (e) {
   var fileSelect = document.getElementById("file-select");
