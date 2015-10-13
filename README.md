@@ -6,6 +6,7 @@
 - [Overview](#overview)
 - [Prerequisites and Configuration](#prerequisites)
 - [Quick Look at the SSO Authentication Code](#SSOAuth)
+- [Quick Look at the the Code](#code)
 - [Project files of interest](#projectfiles)
 - [License](https://github.com/robledosm/OneDriveForBusiness-Explorer/blob/master/LICENSE.txt)
 - [Questions and Comments](#questions-and-comments)
@@ -57,6 +58,7 @@ The authentication startup class, **App_Start/Startup.Auth.cs** in the project c
 > ###Requiring authentication to access controllers
 > Applying Authorize attribute to all controllers in your project will require the user to be authenticated before accessing these controllers. To allow the controller to be accessed anonymously, remove this attribute from the controller. If you want to set the permissions at a more granular level, apply the attribute to each method that requires authorization instead of applying it to the controller class.
 
+<a name="code"></a>
 ##Quick Look at the code
 
 ###Getting the SharePoint API Client
