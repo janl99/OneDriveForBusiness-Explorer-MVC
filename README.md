@@ -35,7 +35,7 @@ You can do this via the Office 365 API Tools for Visual Studio (which automates 
 
   1. Build the project. This will restore the NuGet packages for this solution. 
   2. In the Solution Explorer window, choose **OneDriveForBusiness.MVC** project -> **Add** -> **Connected Service**.
-  3. A Services Manager window will appear. Choose **Office 365** -> *Office 365 APIs* and select the **Register your app** link.
+  3. A Services Manager window will appear. Choose **Office 365** -> **Office 365 APIs** and select the **Register your app** link.
   4. If you haven't signed in before, a sign-in dialog box will appear. Enter the user name and password for your Office 365 tenant admin. We recommend that you use your Office 365 Developer Site. Often, this user name will follow the pattern {username}@{tenant}.onmicrosoft.com. If you do not have a developer site, you can get a free Developer Site as part of your MSDN Benefits or sign up for a free trial. Be aware that the user must be a Tenant Admin user—but for tenants created as part of an Office 365 Developer Site, this is likely to be the case already. Also developer accounts are usually limited to one user.
   5. After you're signed in, you will see a list of all the services. Initially, no permissions will be selected, as the app is not registered to consume any services yet. 
   6. To register for the services used in this sample, choose the following permissions, and select the Permissions link to set the following permissions: 
