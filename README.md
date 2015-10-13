@@ -154,7 +154,7 @@ using (Stream stream = await file.DownloadAsync())
 Uploads a stream as a file to OneDrive for Business
 
 ```csharp
- SharePointClient client = await GetSharePointClient();
+SharePointClient client = await GetSharePointClient();
 var fileName = Request.Headers["X-File-Name"];
 try
 {
