@@ -1,6 +1,4 @@
-# OneDrive for Business Explorer #
-
-##OneDrive for Business starter project for ASP.NET MVC
+#OneDrive for Business starter project for ASP.NET MVC
 
 **Table of Contents**
 - [Overview](#overview)
