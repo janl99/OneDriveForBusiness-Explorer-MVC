@@ -1,0 +1,274 @@
+﻿@{
+    ViewBag.Title = "OneDrive for Business Explorer";
+}
+<h2>@ViewBag.Title</h2>
+<div class="col-md-12" style="padding: 0px;">
+    <div class="form-horizontal">
+        <div class="form-group">
+            @Html.Label("Select file", new { @class = "control-label col-md-2" })
+            <div class="col-md-8">
+                <input type="file" id="file-select" name="file-select" />
+            </div>
+            <div class="col-md-2">
+                <button type="button" class="btn btn-default btn-block uploadButton">Upload to root</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="col-md-12" style="padding: 0px;">
+    <ol class="breadcrumb">
+        <li><a href="#"><i class="fa fa-fw fa-2x fa-folder-open"></i><span style="font-size:1.2em;">Root</span></a></li>
+    </ol>
+</div>
+<div class="col-md-12" style="padding: 0px;">
+    <table class="table table-responsive table-striped table-hover table-condensed">
+        <thead>
+            <tr>
+                <th><i class="fa fa-2x fa-fw fa-arrow-circle-left backButton hidden" style="cursor:pointer;margin-left:5px;"></i></th>
+                <th>Name</th>
+                <th>Creator</th>
+                <th>Size</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+@section scripts {
+    <script type="text/javascript">
+        $(document).ready(function () {
+            var table, tbody, breadCrumb, backButton, uploadButton;
+            table = $('table.table');
+            tbody = table.find('tbody');
+            breadCrumb = $('.breadcrumb');
+            backButton = $('.backButton');
+            uploadButton = $('.uploadButton');
+
+            breadCrumb.find('a').click(function (e) {
+                return onBreadCrumbClick(e);
+            });
+
+            backButton.click(function (e) {
+                var folders = breadCrumb.find('span');
+                if (folders && folders.length > 1) {
+                    var previousFolder = folders.eq(-2);
+                    $(previousFolder).click();
+                }
+            });
+
+            uploadButton.click(function (e) {
+                var fileSelect = document.getElementById("file-select");
+                var files = fileSelect.files;
+                if (files.length > 0) {
+                    var confirm = bootbox.dialog({
+                        title: 'Confirm',
+                        message: 'Are you sure you want to upload the selected file?',
+                        backdrop: true,
+                        show: false,
+                        buttons: {
+                            No: {
+                                callback: function () {
+                                    return true;
+                                }
+                            },
+                            Yes: {
+                                className: 'btn-success',
+                                callback: function () {
+                                    $('.loading-container').removeClass('loading-inactive');
+                                    var file = files[0];
+                                    var xhr = new XMLHttpRequest();
+
+                                    // File uploaded
+                                    xhr.addEventListener("load", function () {
+                                        //upload complete
+                                        $('.loading-container').addClass('loading-inactive');
+                                    }, false);
+
+
+                                    xhr.open("POST", "@Url.Action("Upload", "OneDriveExplorer")", true);
+
+                                    // Set headers
+                                    xhr.setRequestHeader("Content-Type", "multipart/form-data");
+                                    xhr.setRequestHeader("X-File-Name", file.name);
+
+                                    // Send the file
+                                    xhr.send(file);
+                                }
+                            }
+                        }
+                    });
+                    confirm.find('.modal-dialog').addClass('modal-md');
+                    confirm.modal('show');
+                }
+                else
+                {
+                    bootbox.alert({
+                        title: 'Missing file',
+                        message: 'Please, select a file to upload'
+                    });
+                }
+            });
+
+            function addBreadcrumb(id, name) {
+                if (id && name) {
+                    var crumb = '<li><a href="#" data-element-id="' + id + '"><i class="fa fa-fw fa-2x fa-folder-open"></i><span style="font-size:1.2em;">' + name + '</span></a><li>';
+                    breadCrumb.append(crumb);
+                    breadCrumb.find('a:last').click(function (e) {
+                        return onBreadCrumbClick(e);
+                    });
+                    breadCrumb.find('li:empty').remove();
+                    backButton.removeClass('hidden');
+                }
+            }
+
+            function removeBreadcrumbsAfter($element) {
+                $element.parent().nextAll().remove();
+                if (breadCrumb.find('a').length > 1) { //not in the root foler as there are more than one breadcumb
+                    backButton.removeClass('hidden');
+                }
+                else { //we are on the root folder
+                    backButton.addClass('hidden');
+                }
+            }
+
+            function onBreadCrumbClick(e) {
+                e.preventDefault();
+                var self = $(e.target).parent('a');
+                removeBreadcrumbsAfter(self);
+                var id = self.attr('data-element-id');
+                if (id === undefined) {
+                    loadFolder('');
+                }
+                else {
+                    loadFolder(id);
+                }
+            }
+
+            function getReadableFileSizeString(fileSizeInBytes) {
+                var i = -1;
+                var byteUnits = [' kB', ' MB', ' GB', ' TB', 'PB', 'EB', 'ZB', 'YB'];
+                do {
+                    fileSizeInBytes = fileSizeInBytes / 1024;
+                    i++;
+                } while (fileSizeInBytes > 1024);
+
+                return Math.max(fileSizeInBytes, 0.1).toFixed(1) + byteUnits[i];
+            };
+
+            function getSelectedItem() {
+                var selectedRow = tbody.find('tr.active:first');
+                if (selectedRow) {
+                    return {
+                        name: selectedRow.attr('data-element-name'),
+                        id: selectedRow.attr('data-element-id'),
+                        type: selectedRow.find('i:first').hasClass('fa-folder') ? "Folder" : "File",
+                        size: selectedRow.attr('data-element-size')
+                    };
+                }
+                return null;
+            }
+
+            function openFolder() {
+                var selectedItem = getSelectedItem();
+                loadFolder(selectedItem.id).then(
+                    function (success) {
+                        addBreadcrumb(selectedItem.id, selectedItem.name);
+                    },
+                    function (reject) {
+                        console.log(reject)
+                    }
+                );
+            }
+
+            function createMenu(type, extension) {
+                return '<i class="fa fa-fw fa-2x ' + (type === "Folder" ? "fa-folder" : "fa-file fa-file-" + extension + "-o") + '"></i>';
+            }
+
+            function downloadFile() {
+                var selectedItem = getSelectedItem();
+                if (selectedItem.type === "File") {
+                    var confirm = bootbox.dialog({
+                        title: 'Confirm',
+                        message: 'Are you sure you want to download ' + selectedItem.name + '?',
+                        backdrop: true,
+                        show: false,
+                        buttons: {
+                            No: {
+                                callback: function () {
+                                    return true;
+                                }
+                            },
+                            Yes: {
+                                className: 'btn-success',
+                                callback: function () {
+                                    var url = '@Url.Action("Download", "OneDriveExplorer")?fileId=' + selectedItem.id;
+                                    window.open(url, "_blank");
+                                    return true;
+                                }
+                            }
+                        }
+                    });
+                    confirm.find('.modal-dialog').addClass('modal-md');
+                    confirm.modal('show');
+                }
+            }
+
+            function loadFolder(folderId) {
+                var dfd = $.Deferred();
+                $('.loading-container').removeClass('loading-inactive');
+                tbody.empty();
+                $.ajax({
+                    url: '@Url.Action("List", "OneDriveExplorer")',
+                    data: { folderId: folderId },
+                    cache: false,
+                    method: 'POST',
+                    dataType: 'json',
+                    success: function (data) {
+                        if (data.success === true) {
+                            var rows = '';
+                            $.each(data.items, function (idx, item) {
+                                rows += '<tr data-element-id="' + item.Id + '" data-element-name="' + item.Name + '" data-element-size="' + item.Size + '">' +
+                                                   '<td>' + createMenu(item.Type, item.Extension) + '</td>' +
+                                                   '<td>' + item.Name + '</td>' +
+                                                   '<td>' + item.Creator + '</td>' +
+                                                   '<td align="right">' + (item.Type === "Folder" ? '' : getReadableFileSizeString(item.Size)) + '</td>' +
+                                               '</tr>';
+                            });
+                            tbody.append(rows);
+                            tbody.find('tr').dblclick(function (e) {
+                                var selectedItem = getSelectedItem();
+                                switch (selectedItem.type) {
+                                    case "Folder": //open folder
+                                        openFolder();
+                                        break;
+                                    case "File": //download file
+                                        downloadFile();
+                                    default:
+                                        break;
+                                }
+                            });
+                            tbody.find('tr').click(function (e) {
+                                var id = $(this).attr('data-element-id');
+                                tbody.find('tr.active').removeClass('active').removeClass('selectedRow');
+                                tbody.find('tr[data-element-id="' + id + '"]').addClass('active').addClass('selectedRow');
+                            });
+                            dfd.resolve();
+                        }
+                        else {
+                            if (data.message) {
+                                alert(data.message);
+                            }
+                            dfd.reject(data);
+                        }
+
+                    },
+                    complete: function () {
+                        $('.loading-container').addClass('loading-inactive');
+                    }
+                });
+                return dfd.promise();
+            }
+
+            loadFolder('');
+        });
+    </script>
+}
