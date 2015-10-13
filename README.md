@@ -1,12 +1,5 @@
 # OneDrive for Business Explorer #
 
-##OneDrive for Business starter project for ASP.NET MVC##
-
-**Table of Contents**
-- [Overview](#overview)
-- [Prerequisites and Configuration](#prerequisites)
-- [Quick Look at the SSO Authentication Cod#OneDrive for Business Explorer
-
 ##OneDrive for Business starter project for ASP.NET MVC
 
 **Table of Contents**
@@ -69,74 +62,67 @@ The authentication startup class, **App_Start/Startup.Auth.cs** in the project c
 ###Getting the SharePoint API Client
 Get the *SharePointClient* object. You can call this code from other methods that use the SharePoint client.
 ```csharp
-private static async Task<SharePointClient>
- GetSharePointClient()
+private static async Task<SharePointClient> GetSharePointClient()
+{
+    string signInUserId = ClaimsPrincipal.Current.FindFirst(ClaimTypes.NameIdentifier).Value;
+    string userObjectId = ClaimsPrincipal.Current.FindFirst("http://schemas.microsoft.com/identity/claims/objectidentifier".Value;
+    string tenantId = ClaimsPrincipal.Current.FindFirst("http://schemas.microsoft.com/identity/claims/tenantid").Value;
+
+    AuthenticationContext authContext = new AuthenticationContext(string.Format("{0}/{1}", SettingsHelper.AuthorizationUri, tenantId), new ADALTokenCache(signInUserId));
+
+    DiscoveryClient discovery = new DiscoveryClient(SettingsHelper.DiscoveryServiceEndpointUri,
+            async () =>
+            {
+                var authResult = await authContext.AcquireTokenSilentAsync(SettingsHelper.DiscoveryServiceResourceId, new ClientCredential(SettingsHelper.ClientId, SettingsHelper.ClientSecret), new UserIdentifier(userObjectId, UserIdentifierType.UniqueId));
+
+                return authResult.AccessToken;
+            });
+
+    CapabilityDiscoveryResult capability = await discovery.DiscoverCapabilityAsync(SettingsHelper.Capability);
+    SharePointClient client = new SharePointClient(capability.ServiceEndpointUri,
+        async () =>
         {
-            string signInUserId = ClaimsPrincipal.Current.FindFirst(ClaimTypes.NameIdentifier).Value;
-            string userObjectId = ClaimsPrincipal.Current.FindFirst("http://schemas.microsoft.com/identity/claims/objectidentifier").Value;
-            string tenantId = ClaimsPrincipal.Current.FindFirst("http://schemas.microsoft.com/identity/claims/tenantid").Value;
+            var authResult = await authContext.AcquireTokenSilentAsync(capability.ServiceResourceId, new ClientCredential(SettingsHelper.ClientId, SettingsHelper.ClientSecret), new UserIdentifier(userObjectId, UserIdentifierType.UniqueId));
 
-            AuthenticationContext authContext = new AuthenticationContext(string.Format("{0}/{1}", SettingsHelper.AuthorizationUri, tenantId), new ADALTokenCache(signInUserId));
-
-            DiscoveryClient discovery = new DiscoveryClient(SettingsHelper.DiscoveryServiceEndpointUri,
-                    async () =>
-                    {
-                        var authResult = await authContext.AcquireTokenSilentAsync(SettingsHelper.DiscoveryServiceResourceId, new ClientCredential(SettingsHelper.ClientId, SettingsHelper.ClientSecret), new UserIdentifier(userObjectId, UserIdentifierType.UniqueId));
-
-                        return authResult.AccessToken;
-                    });
-
-            CapabilityDiscoveryResult capability = await discovery.DiscoverCapabilityAsync(SettingsHelper.Capability);
-            SharePointClient client = new SharePointClient(capability.ServiceEndpointUri,
-                async () =>
-                {
-                    var authResult = await authContext.AcquireTokenSilentAsync(capability.ServiceResourceId, new ClientCredential(SettingsHelper.ClientId, SettingsHelper.ClientSecret), new UserIdentifier(userObjectId, UserIdentifierType.UniqueId));
-
-                    return authResult.AccessToken;
-                });
-            return client;
-        }
+            return authResult.AccessToken;
+        });
+    return client;
+}
 ```
 
 ###Browsing folders
 Returns a list of *OneDriveItemViewModel*, if *folderId* is a null or an empty string, the list will be populated with objects from the root folder
 ```csharp
 List<OneDriveItemViewModel> oneDriveItems = new List<OneDriveItemViewModel>();
-            try
-            {
-                SharePointClient client = await GetSharePointClient();
-
-                if (string.IsNullOrEmpty(folderId))
-                {
-
-                    var filesResult = await client.Files.ExecuteAsync();
-                    do
-                    {
-                        var files = filesResult.CurrentPage;
-                        foreach (var file in files)
-                        {
-                            string extension = (file.Type == "File") ? System.IO.Path.GetExtension(file.Name).Split('.')[1] : string.Empty;
-                            oneDriveItems.Add(new OneDriveItemViewModel { Id = file.Id, Name = file.Name, Size = file.Size, Type = file.Type, Extension = extension, Creator = file.CreatedBy.User.DisplayName });
-                        }
-                        filesResult = filesResult.GetNextPageAsync().GetAwaiter().GetResult();
-                    } while (filesResult != null);
-                }
-                else
-                {
-                    var filesResult = await client.Files.GetById(folderId).ToFolder().Children.ExecuteAsync();
-                    do
-                    {
-                        var files = filesResult.CurrentPage;
-                        foreach (var file in files)
-                        {
-                            string extension = (file.Type == "File") ? System.IO.Path.GetExtension(file.Name).Split('.')[1] : string.Empty;
-                            oneDriveItems.Add(new OneDriveItemViewModel { Id = file.Id, Name = file.Name, Size = file.Size, Type = file.Type, Extension = extension, Creator = file.CreatedBy.User.DisplayName });
-                        }
-                        filesResult = filesResult.GetNextPageAsync().GetAwaiter().GetResult();
-                    } while (filesResult != null);
-
-                }
-            }
+SharePointClient client = await GetSharePointClient();
+if (string.IsNullOrEmpty(folderId))
+{
+  var filesResult = await client.Files.ExecuteAsync();
+  do
+  {
+      var files = filesResult.CurrentPage;
+      foreach (var file in files)
+      {
+          string extension = (file.Type == "File") ? System.IO.Path.GetExtension(file.Name).Split('.')[1] : string.Empty;
+          oneDriveItems.Add(new OneDriveItemViewModel { Id = file.Id, Name = file.Name, Size = file.Size, Type = file.Type, Extension = extension, Creator = file.CreatedBy.User.DisplayName });
+      }
+      filesResult = filesResult.GetNextPageAsync().GetAwaiter().GetResult();
+  } while (filesResult != null);
+}
+else
+{
+  var filesResult = await client.Files.GetById(folderId).ToFolder().Children.ExecuteAsync();
+  do
+  {
+      var files = filesResult.CurrentPage;
+      foreach (var file in files)
+      {
+          string extension = (file.Type == "File") ? System.IO.Path.GetExtension(file.Name).Split('.')[1] : string.Empty;
+          oneDriveItems.Add(new OneDriveItemViewModel { Id = file.Id, Name = file.Name, Size = file.Size, Type = file.Type, Extension = extension, Creator = file.CreatedBy.User.DisplayName });
+      }
+      filesResult = filesResult.GetNextPageAsync().GetAwaiter().GetResult();
+  } while (filesResult != null);
+}
 ```
 
 ###Downloading files
@@ -144,25 +130,24 @@ Download a file from OneDrive for Business as a Stream
 
 ```csharp
 SharePointClient client = await GetSharePointClient();
+var file = client.Files.GetById(fileId).ToFile();
+using (Stream stream = await file.DownloadAsync())
+{
+    using (MemoryStream ms = new MemoryStream())
+    {
+        stream.Seek(0, SeekOrigin.Begin);
+        stream.CopyTo(ms);
+        byte[] buffer = ms.ToArray();
 
-            var file = client.Files.GetById(fileId).ToFile();
-            using (Stream stream = await file.DownloadAsync())
-            {
-                using (MemoryStream ms = new MemoryStream())
-                {
-                    stream.Seek(0, SeekOrigin.Begin);
-                    stream.CopyTo(ms);
-                    byte[] buffer = ms.ToArray();
-
-                    var fileData = await file.ExecuteAsync();
-                    Response.Clear();
-                    Response.ContentType = GetContentType(fileData.Name);
-                    Response.AddHeader("Content-Disposition", "attachment; filename=" + HttpUtility.UrlEncode(fileData.Name, System.Text.Encoding.UTF8));
-                    Response.AddHeader("Content-Length", buffer.Length.ToString());
-                    Response.OutputStream.Write(buffer, 0, buffer.Length);
-                    Response.Flush();
-                }
-            }
+        var fileData = await file.ExecuteAsync();
+        Response.Clear();
+        Response.ContentType = GetContentType(fileData.Name);
+        Response.AddHeader("Content-Disposition", "attachment; filename=" + HttpUtility.UrlEncode(fileData.Name, System.Text.Encoding.UTF8));
+        Response.AddHeader("Content-Length", buffer.Length.ToString());
+        Response.OutputStream.Write(buffer, 0, buffer.Length);
+        Response.Flush();
+    }
+}
 ```
 
 ###Uploading files
@@ -170,24 +155,24 @@ Uploads a stream as a file to OneDrive for Business
 
 ```csharp
  SharePointClient client = await GetSharePointClient();
-                var fileName = Request.Headers["X-File-Name"];
-                try
-                {
-                    // First check if a file with the same name already exists. If it exists, delete it.
-                    var item = await client.Files.GetByPathAsync(fileName);
-                    await item.DeleteAsync();
-                }
-                catch
-                {
-                    //there is no file with the same name, swallow the error and continue
-                }
+var fileName = Request.Headers["X-File-Name"];
+try
+{
+    // First check if a file with the same name already exists. If it exists, delete it.
+    var item = await client.Files.GetByPathAsync(fileName);
+    await item.DeleteAsync();
+}
+catch
+{
+    //there is no file with the same name, swallow the error and continue
+}
 
-                var oneDriveFile = new Microsoft.Office365.SharePoint.FileServices.File
-                {
-                    Name = fileName
-                };
-                await client.Files.AddItemAsync(oneDriveFile);
-                await client.Files.GetById(oneDriveFile.Id).ToFile().UploadAsync(Request.InputStream);
+var oneDriveFile = new Microsoft.Office365.SharePoint.FileServices.File
+{
+    Name = fileName
+};
+await client.Files.AddItemAsync(oneDriveFile);
+await client.Files.GetById(oneDriveFile.Id).ToFile().UploadAsync(Request.InputStream);
 ```
 <a name="projectfiles"></a>
 ##Project files of interest
