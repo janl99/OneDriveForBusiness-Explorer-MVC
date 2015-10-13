@@ -7,7 +7,7 @@
 - [Quick Look at the the OneDriveExplorerController.cs Code](#cscode)
 - [Quick Look at the the JavaScript Code](#jscode)
 - [Project files of interest](#projectfiles)
-- [License](https://github.com/robledosm/OneDriveForBusiness-Explorer/blob/master/LICENSE.txt)
+- [License](https://github.com/robledosm/OneDriveForBusiness-Explorer-MVC/blob/master/LICENSE.txt)
 - [Questions and Comments](#questions-and-comments)
 
 ##Overview
@@ -351,7 +351,7 @@ uploadButton.click(function (e) {
 
 ## Questions and Comments
 
-We'd love to get your feedback on the [OneDriveForBusiness-Explorer-MVC](https://github.com/robledosm/OneDriveForBusiness-Explorer) project. You can send your questions and suggestions to us in the [Issues](https://github.com/robledosm/OneDriveForBusiness-Explorer/issues) section of this repository.
+We'd love to get your feedback on the [OneDriveForBusiness-Explorer-MVC](https://github.com/robledosm/OneDriveForBusiness-Explorer-MVC) project. You can send your questions and suggestions to us in the [Issues](https://github.com/robledosm/OneDriveForBusiness-Explorer/issues) section of this repository.
 
 
 ## Copyright
