@@ -4,7 +4,8 @@
 - [Overview](#overview)
 - [Prerequisites and Configuration](#prerequisites)
 - [Quick Look at the SSO Authentication Code](#SSOAuth)
-- [Quick Look at the the Code](#code)
+- [Quick Look at the the OneDriveExplorerController.cs Code](#cscode)
+- [Quick Look at the the JavaScript Code](#jscode)
 - [Project files of interest](#projectfiles)
 - [License](https://github.com/robledosm/OneDriveForBusiness-Explorer/blob/master/LICENSE.txt)
 - [Questions and Comments](#questions-and-comments)
@@ -56,8 +57,8 @@ The authentication startup class, **App_Start/Startup.Auth.cs** in the project c
 > ###Requiring authentication to access controllers
 > Applying Authorize attribute to all controllers in your project will require the user to be authenticated before accessing these controllers. To allow the controller to be accessed anonymously, remove this attribute from the controller. If you want to set the permissions at a more granular level, apply the attribute to each method that requires authorization instead of applying it to the controller class.
 
-<a name="code"></a>
-##Quick Look at the code
+<a name="cscode"></a>
+##Quick Look at the the OneDriveExplorerController.cs Code
 
 ###Getting the SharePoint API Client
 Get the *SharePointClient* object. You can call this code from other methods that use the SharePoint client.
@@ -90,7 +91,7 @@ private static async Task<SharePointClient> GetSharePointClient()
 }
 ```
 
-###Browsing folders
+###Browsing folders and files
 Returns a list of *OneDriveItemViewModel*, if *folderId* is a null or an empty string, the list will be populated with objects from the root folder
 ```csharp
 List<OneDriveItemViewModel> oneDriveItems = new List<OneDriveItemViewModel>();
@@ -174,6 +175,159 @@ var oneDriveFile = new Microsoft.Office365.SharePoint.FileServices.File
 await client.Files.AddItemAsync(oneDriveFile);
 await client.Files.GetById(oneDriveFile.Id).ToFile().UploadAsync(Request.InputStream);
 ```
+
+<a name="jscode"></a>
+##Quick Look at the the JavaScript Code
+
+###Browse folders and files
+Gets the list of files and folders from the List method of the OneDriveExplorer Controller
+```javascript
+function loadFolder(folderId) {
+  var dfd = $.Deferred();
+  $('.loading-container').removeClass('loading-inactive');
+  tbody.empty();
+  $.ajax({
+      url: '@Url.Action("List", "OneDriveExplorer")',
+      data: { folderId: folderId },
+      cache: false,
+      method: 'POST',
+      dataType: 'json',
+      success: function (data) {
+          if (data.success === true) {
+              var rows = '';
+              $.each(data.items, function (idx, item) {
+                  rows += '<tr data-element-id="' + item.Id + '" data-element-name="' + item.Name + '" data-element-size="' + item.Size + '">' +
+                                     '<td>' + createMenu(item.Type, item.Extension) + '</td>' +
+                                     '<td>' + item.Name + '</td>' +
+                                     '<td>' + item.Creator + '</td>' +
+                                     '<td align="right">' + (item.Type === "Folder" ? '' : getReadableFileSizeString(item.Size)) + '</td>' +
+                                 '</tr>';
+              });
+              tbody.append(rows);
+              tbody.find('tr').dblclick(function (e) {
+                  var selectedItem = getSelectedItem();
+                  switch (selectedItem.type) {
+                      case "Folder": //open folder
+                          openFolder();
+                          break;
+                      case "File": //download file
+                          downloadFile();
+                      default:
+                          break;
+                  }
+              });
+              tbody.find('tr').click(function (e) {
+                  var id = $(this).attr('data-element-id');
+                  tbody.find('tr.active').removeClass('active').removeClass('selectedRow');
+                  tbody.find('tr[data-element-id="' + id + '"]').addClass('active').addClass('selectedRow');
+              });
+              dfd.resolve();
+          }
+          else {
+              if (data.message) {
+                  alert(data.message);
+              }
+              dfd.reject(data);
+          }
+
+      },
+      complete: function () {
+          $('.loading-container').addClass('loading-inactive');
+      }
+  });
+  return dfd.promise();
+}
+```
+###Downloading files
+Asks the user for confirmation before downloading the file from OneDrive for Business
+```javascript
+function downloadFile() {
+  var selectedItem = getSelectedItem();
+  if (selectedItem.type === "File") {
+      var confirm = bootbox.dialog({
+          title: 'Confirm',
+          message: 'Are you sure you want to download ' + selectedItem.name + '?',
+          backdrop: true,
+          show: false,
+          buttons: {
+              No: {
+                  callback: function () {
+                      return true;
+                  }
+              },
+              Yes: {
+                  className: 'btn-success',
+                  callback: function () {
+                      var url = '@Url.Action("Download", "OneDriveExplorer")?fileId=' + selectedItem.id;
+                      window.open(url, "_blank");
+                      return true;
+                  }
+              }
+          }
+      });
+      confirm.find('.modal-dialog').addClass('modal-md');
+      confirm.modal('show');
+  }
+}
+```
+
+###Uploading files
+Asks the user for confirmation before uploading a file to OneDrive for Business using XMLHttpRequest()
+```javascript
+uploadButton.click(function (e) {
+  var fileSelect = document.getElementById("file-select");
+  var files = fileSelect.files;
+  if (files.length > 0) {
+      var confirm = bootbox.dialog({
+          title: 'Confirm',
+          message: 'Are you sure you want to upload the selected file?',
+          backdrop: true,
+          show: false,
+          buttons: {
+              No: {
+                  callback: function () {
+                      return true;
+                  }
+              },
+              Yes: {
+                  className: 'btn-success',
+                  callback: function () {
+                      $('.loading-container').removeClass('loading-inactive');
+                      var file = files[0];
+                      var xhr = new XMLHttpRequest();
+
+                      // File uploaded
+                      xhr.addEventListener("load", function () {
+                          //upload complete
+                          $('.loading-container').addClass('loading-inactive');
+                      }, false);
+
+
+                      xhr.open("POST", "@Url.Action("Upload", "OneDriveExplorer")", true);
+
+                      // Set headers
+                      xhr.setRequestHeader("Content-Type", "multipart/form-data");
+                      xhr.setRequestHeader("X-File-Name", file.name);
+
+                      // Send the file
+                      xhr.send(file);
+                  }
+              }
+          }
+      });
+      confirm.find('.modal-dialog').addClass('modal-md');
+      confirm.modal('show');
+  }
+  else
+  {
+      bootbox.alert({
+          title: 'Missing file',
+          message: 'Please, select a file to upload'
+      });
+  }
+});
+```
+
 <a name="projectfiles"></a>
 ##Project files of interest
 **Controllers**
